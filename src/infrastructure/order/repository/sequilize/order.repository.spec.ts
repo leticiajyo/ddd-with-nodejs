@@ -135,6 +135,40 @@ describe("Order repository test", () => {
         });
     });
 
+    it("should find an order", async () => {
+        const customer = await createCustomer('123')
+        const product = await createProduct('123', 30)
+        const orderItem = await createOrderItem('123', 3, product)
+
+        const order = new Order("123", customer.id, [orderItem]);
+
+        await orderRepository.create(order);
+
+        const orderModel = await OrderModel.findOne({
+            where: {id: order.id},
+            include: ["items"],
+        });
+
+        const foundOrder = await orderRepository.find(order.id);
+
+        expect(orderModel.toJSON()).toStrictEqual({
+            id: foundOrder.id,
+            customer_id: foundOrder.customerId,
+            total: foundOrder.total(),
+            items: [
+                {
+                    id: foundOrder.items[0].id,
+                    name: foundOrder.items[0].name,
+                    price: foundOrder.items[0].price,
+                    quantity: foundOrder.items[0].quantity,
+                    order_id: foundOrder.id,
+                    product_id: product.id,
+                },
+            ],
+        });
+    });
+
+
     async function createCustomer(id: string): Promise<Customer> {
         const customer = new Customer(id, `Customer ${id}`);
         const address = new Address(`Street ${id}`, 1, `Zipcode ${id}`, `City ${id}`);
